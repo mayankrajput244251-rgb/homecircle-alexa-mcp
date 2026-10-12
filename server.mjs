@@ -194,6 +194,7 @@ export function createHomeCircleServer({ state = createInitialState(), stateFile
     const cors = origin ? { 'Access-Control-Allow-Origin': origin, 'Vary': 'Origin', 'Access-Control-Allow-Headers': 'Content-Type, Accept, MCP-Protocol-Version, MCP-Session-Id', 'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS' } : {};
     if (req.method === 'OPTIONS') { res.writeHead(204, cors); return res.end(); }
     if (req.url === '/health' && req.method === 'GET') return json(res, 200, { ok: true, app: 'HomeCircle', protocolVersion: PROTOCOL_VERSION, tools: TOOL_DEFINITIONS.length, privacyMode: state.home.privacyMode }, cors);
+    if (req.url === '/mcp' && req.method === 'GET') { res.writeHead(405, { ...cors, Allow: 'POST, DELETE' }); return res.end(); }
     if (req.url === '/mcp' && req.method === 'POST') {
       if (!String(req.headers.accept || '').includes('application/json') || !String(req.headers.accept || '').includes('text/event-stream')) return json(res, 406, { error: 'Accept must include application/json and text/event-stream.' }, cors);
       if (!String(req.headers['content-type'] || '').includes('application/json')) return json(res, 415, { error: 'Content-Type must be application/json.' }, cors);
@@ -201,6 +202,7 @@ export function createHomeCircleServer({ state = createInitialState(), stateFile
       for await (const chunk of req) { body += chunk; if (body.length > 1_000_000) return json(res, 413, { error: 'Request is too large.' }, cors); }
       let message;
       try { message = JSON.parse(body); } catch { return json(res, 400, { error: 'Body must be valid JSON.' }, cors); }
+      if (message.method !== 'initialize' && req.headers['mcp-protocol-version'] !== PROTOCOL_VERSION) return json(res, 400, { error: 'MCP-Protocol-Version must be ' + PROTOCOL_VERSION + '.' }, cors);
       let sessionId = req.headers['mcp-session-id'];
       if (message.method === 'initialize') { sessionId = randomUUID(); sessions.set(sessionId, { createdAt: Date.now() }); }
       else if (!sessionId || !sessions.has(sessionId)) return json(res, 404, { error: 'MCP session not found. Initialize a new session.' }, cors);

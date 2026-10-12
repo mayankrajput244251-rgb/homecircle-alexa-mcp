@@ -4,6 +4,9 @@
 
 This is a separate project from the shop-floor copilot. It uses a self-hosted MCP server that implements Streamable HTTP with protocol version 2025-11-25, plus a browser dashboard that can run in local MCP mode or as a no-server interactive demo.
 
+**Public browser demo:** https://homecircle-family-coordination.mayankrajput244251.chatgpt.site
+The hosted page runs its labeled browser-only simulation. Run the project locally to connect the dashboard to the actual MCP server.
+
 ## Why HomeCircle
 
 Families often coordinate small daily tasks across chats, calendars, and memory. HomeCircle keeps a shared routine list and an activity timeline together, so a family member can ask for a brief, mark a check-in, add a routine, or prepare an alert preview. The project is designed around consent: alert previews are never sent anywhere, and the interface says so before confirmation.
