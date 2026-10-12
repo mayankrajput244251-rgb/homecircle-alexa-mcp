@@ -5,11 +5,39 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createInitialState, callTool, handleRpc, TOOL_DEFINITIONS, loadState, saveState } from '../server.mjs';
 
-test('MCP advertises the target protocol and eight tools', () => {
+test('MCP advertises the target protocol and advanced tool catalog', () => {
   const init = handleRpc(createInitialState(), { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-11-25' } });
   assert.equal(init.result.protocolVersion, '2025-11-25');
-  assert.equal(TOOL_DEFINITIONS.length, 8);
-  assert.equal(handleRpc(createInitialState(), { jsonrpc: '2.0', id: 2, method: 'tools/list' }).result.tools.length, 8);
+  assert.equal(TOOL_DEFINITIONS.length, 13);
+  assert.equal(handleRpc(createInitialState(), { jsonrpc: '2.0', id: 2, method: 'tools/list' }).result.tools.length, 13);
+});
+
+test('advanced routine lifecycle supports priority, pause, filters, and archive history', () => {
+  const state = createInitialState();
+  const created = callTool(state, 'create_routine', { title: 'Library visit', memberId: 'maya', time: '17:15', repeat: 'Weekly', priority: 'high' }, 1000).structuredContent.routine;
+  assert.equal(created.priority, 'high');
+  assert.equal(callTool(state, 'update_routine', { routineId: created.id, status: 'paused', note: 'Paused for a week' }, 2000).structuredContent.routine.status, 'paused');
+  assert.equal(callTool(state, 'list_routines', { status: 'paused' }).structuredContent.count, 1);
+  assert.equal(callTool(state, 'archive_routine', { routineId: created.id }, 3000).structuredContent.ok, true);
+  assert.equal(callTool(state, 'list_routines', {}).structuredContent.routines.some((item) => item.id === created.id), false);
+  assert.equal(callTool(state, 'list_routines', { includeArchived: true }).structuredContent.routines.some((item) => item.id === created.id), true);
+});
+
+test('member management, household preferences, insights, and export stay local', () => {
+  const state = createInitialState();
+  const member = callTool(state, 'add_family_member', { name: 'Priya Kumar', role: 'Friend' }, 1000).structuredContent.member;
+  assert.equal(member.initials, 'PK');
+  const preferences = callTool(state, 'update_family_preference', { quietStart: '20:30', quietEnd: '06:30', followUpMinutes: 60, weekStartsOn: 'Sunday' }, 2000).structuredContent.preferences;
+  assert.equal(preferences.followUpMinutes, 60);
+  assert.equal(preferences.weekStartsOn, 'Sunday');
+  assert.equal(callTool(state, 'update_family_preference', { followUpMinutes: 400 }).isError, true);
+  const insights = callTool(state, 'get_insights').structuredContent;
+  assert.equal(insights.activeRoutines, 3);
+  assert.equal(insights.byMember.some((item) => item.member === 'Priya Kumar'), true);
+  const exported = callTool(state, 'export_household_data').structuredContent;
+  assert.equal(exported.format, 'homecircle-household-v1');
+  assert.equal(exported.data.members.length, 4);
+  assert.equal(exported.data.preferences.quietHours.start, '20:30');
 });
 
 test('routine creation validates input and persists structured activity', () => {

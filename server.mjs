@@ -32,7 +32,7 @@ export function createInitialState() {
     activity: [
       { id: randomUUID(), type: 'note', memberId: 'arjun', text: 'Welcome to the HomeCircle demo. Sample routines are fictional.', at: isoNow() }
     ],
-    preferences: { quietHours: { start: '21:00', end: '07:00' }, alertMode: 'confirm-before-sharing', sharingEnabled: false },
+    preferences: { quietHours: { start: '21:00', end: '07:00' }, alertMode: 'confirm-before-sharing', sharingEnabled: false, followUpMinutes: 30, weekStartsOn: 'Monday' },
     escalationLog: []
   };
 }
@@ -80,25 +80,31 @@ function toolError(message) { return { isError: true, content: [{ type: 'text', 
 
 export const TOOL_DEFINITIONS = [
   { name: 'get_family_brief', title: 'Get family brief', description: 'Summarize household members, routines due today, completed check-ins, and privacy settings. Uses only local demo state.', inputSchema: { type: 'object', additionalProperties: false, properties: {} }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
-  { name: 'list_routines', title: 'List routines', description: 'List household routines, optionally filtered by member or status.', inputSchema: { type: 'object', additionalProperties: false, properties: { memberId: { type: 'string', description: 'Optional member ID.' }, status: { type: 'string', enum: ['due', 'upcoming', 'completed'], description: 'Optional routine status.' } } }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
+  { name: 'list_routines', title: 'List routines', description: 'List household routines, optionally filtered by member, status, or category. Archived routines are excluded unless requested.', inputSchema: { type: 'object', additionalProperties: false, properties: { memberId: { type: 'string', description: 'Optional member ID.' }, status: { type: 'string', enum: ['due', 'upcoming', 'completed', 'paused'], description: 'Optional routine status.' }, category: { type: 'string' }, includeArchived: { type: 'boolean' } } }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
   { name: 'log_check_in', title: 'Log a check-in', description: 'Record a completed, skipped, or needs-follow-up routine in the local shared activity timeline.', inputSchema: { type: 'object', additionalProperties: false, properties: { routineId: { type: 'string' }, memberId: { type: 'string' }, outcome: { type: 'string', enum: ['completed', 'skipped', 'needs_follow_up'] }, note: { type: 'string', maxLength: 240 } }, required: ['routineId', 'outcome'] }, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } },
   { name: 'create_routine', title: 'Create a routine', description: 'Add a household routine. This changes only the local demo state; it does not send a notification.', inputSchema: { type: 'object', additionalProperties: false, properties: { title: { type: 'string', maxLength: 80 }, memberId: { type: 'string' }, category: { type: 'string', maxLength: 40 }, time: { type: 'string', description: '24-hour HH:MM time.' }, repeat: { type: 'string', enum: ['Daily', 'Weekdays', 'Weekly', 'Today'] }, note: { type: 'string', maxLength: 240 } }, required: ['title', 'memberId', 'time', 'repeat'] }, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } },
   { name: 'prepare_caregiver_alert', title: 'Prepare caregiver alert', description: 'Prepare a private, reviewable alert preview for a care partner. Nothing is shared or sent until a separate confirmation call.', inputSchema: { type: 'object', additionalProperties: false, properties: { routineId: { type: 'string' }, reason: { type: 'string', maxLength: 240 } }, required: ['routineId', 'reason'] }, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } },
   { name: 'confirm_caregiver_alert', title: 'Confirm caregiver alert', description: 'Confirm or discard a pending local demo alert. Confirmation records the event in the local timeline only; it never sends a real message.', inputSchema: { type: 'object', additionalProperties: false, properties: { actionId: { type: 'string' }, confirmed: { type: 'boolean' } }, required: ['actionId', 'confirmed'] }, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } },
   { name: 'get_activity_timeline', title: 'Get activity timeline', description: 'Read recent family check-ins and demo events.', inputSchema: { type: 'object', additionalProperties: false, properties: { limit: { type: 'integer', minimum: 1, maximum: 30 } } }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
-  { name: 'update_family_preference', title: 'Update family preference', description: 'Update local household preferences such as quiet hours. The change is visible and reversible.', inputSchema: { type: 'object', additionalProperties: false, properties: { quietStart: { type: 'string' }, quietEnd: { type: 'string' } }, required: ['quietStart', 'quietEnd'] }, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } }
+  { name: 'update_family_preference', title: 'Update family preference', description: 'Update local quiet hours, follow-up timing, week start, timezone, or whether alert previews are enabled. Alerts still require confirmation.', inputSchema: { type: 'object', additionalProperties: false, properties: { quietStart: { type: 'string' }, quietEnd: { type: 'string' }, followUpMinutes: { type: 'integer', minimum: 5, maximum: 240 }, weekStartsOn: { type: 'string', enum: ['Monday', 'Sunday'] }, timezone: { type: 'string', maxLength: 64 }, sharingEnabled: { type: 'boolean' } } }, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } },
+  { name: 'update_routine', title: 'Update a routine', description: 'Edit a local routine or pause/resume it. Changes never send reminders.', inputSchema: { type: 'object', additionalProperties: false, properties: { routineId: { type: 'string' }, title: { type: 'string', maxLength: 80 }, memberId: { type: 'string' }, category: { type: 'string', maxLength: 40 }, time: { type: 'string' }, repeat: { type: 'string', enum: ['Daily', 'Weekdays', 'Weekly', 'Today'] }, note: { type: 'string', maxLength: 240 }, priority: { type: 'string', enum: ['low', 'normal', 'high'] }, status: { type: 'string', enum: ['due', 'upcoming', 'paused'] } }, required: ['routineId'] }, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } },
+  { name: 'archive_routine', title: 'Archive a routine', description: 'Hide a routine from the active planner while retaining its history in local demo data.', inputSchema: { type: 'object', additionalProperties: false, properties: { routineId: { type: 'string' } }, required: ['routineId'] }, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } },
+  { name: 'add_family_member', title: 'Add a family member', description: 'Add a name and relationship label to the fictional local household. Do not add contact or medical details.', inputSchema: { type: 'object', additionalProperties: false, properties: { name: { type: 'string', maxLength: 48 }, role: { type: 'string', maxLength: 40 } }, required: ['name', 'role'] }, annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } },
+  { name: 'get_insights', title: 'Get household insights', description: 'Summarize routine completion, active workload, and activity counts from local demo data.', inputSchema: { type: 'object', additionalProperties: false, properties: {} }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
+  { name: 'export_household_data', title: 'Export household data', description: 'Return the current fictional household state as JSON for a user initiated local download.', inputSchema: { type: 'object', additionalProperties: false, properties: {} }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } }
 ];
 
 export function callTool(state, name, args = {}, now = Date.now(), pending = new Map()) {
   try {
     if (name === 'get_family_brief') {
-      const completed = state.routines.filter((item) => item.status === 'completed').length;
-      return result({ household: state.home.name, timezone: state.home.timezone, members: state.members.map(({ id, name, role }) => ({ id, name, role })), routines: { total: state.routines.length, due: state.routines.filter((item) => item.status === 'due').length, upcoming: state.routines.filter((item) => item.status === 'upcoming').length, completed }, privacy: { mode: state.home.privacyMode, alertMode: state.preferences.alertMode, sharingEnabled: state.preferences.sharingEnabled }, topItems: state.routines.filter((item) => item.status === 'due').slice(0, 3).map((item) => ({ id: item.id, title: item.title, member: memberById(state, item.memberId).name, time: item.time })), source: 'Local HomeCircle demo state', notice: 'Fictional demo information; not medical advice or an emergency service.' });
+      const active = state.routines.filter((item) => !item.archived && item.status !== 'paused');
+      const completed = active.filter((item) => item.status === 'completed').length;
+      return result({ household: state.home.name, timezone: state.home.timezone, members: state.members.map(({ id, name, role, initials, color }) => ({ id, name, role, initials, color })), routines: { total: active.length, due: active.filter((item) => item.status === 'due').length, upcoming: active.filter((item) => item.status === 'upcoming').length, completed, paused: state.routines.filter((item) => item.status === 'paused' && !item.archived).length, archived: state.routines.filter((item) => item.archived).length }, preferences: { ...state.preferences, timezone: state.home.timezone }, privacy: { mode: state.home.privacyMode, alertMode: state.preferences.alertMode, sharingEnabled: state.preferences.sharingEnabled }, topItems: active.filter((item) => item.status === 'due').slice(0, 3).map((item) => ({ id: item.id, title: item.title, member: memberById(state, item.memberId).name, time: item.time })), source: 'Local HomeCircle demo state', notice: 'Fictional demo information; not medical advice or an emergency service.' });
     }
     if (name === 'list_routines') {
       if (args.memberId) memberById(state, args.memberId);
-      if (args.status && !['due', 'upcoming', 'completed'].includes(args.status)) throw new Error('Unknown status filter.');
-      const routines = state.routines.filter((item) => (!args.memberId || item.memberId === args.memberId) && (!args.status || item.status === args.status)).map((item) => ({ ...item, memberName: memberById(state, item.memberId).name }));
+      if (args.status && !['due', 'upcoming', 'completed', 'paused'].includes(args.status)) throw new Error('Unknown status filter.');
+      const routines = state.routines.filter((item) => (args.includeArchived || !item.archived) && (!args.memberId || item.memberId === args.memberId) && (!args.status || item.status === args.status) && (!args.category || item.category === args.category)).map((item) => ({ ...item, memberName: memberById(state, item.memberId).name }));
       return result({ routines, count: routines.length, source: 'Local HomeCircle routine list' });
     }
     if (name === 'log_check_in') {
@@ -117,7 +123,8 @@ export function callTool(state, name, args = {}, now = Date.now(), pending = new
       const time = text(args.time, 'Time', 5);
       if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new Error('Time must use 24-hour HH:MM format.');
       if (!['Daily', 'Weekdays', 'Weekly', 'Today'].includes(args.repeat)) throw new Error('Choose Daily, Weekdays, Weekly, or Today.');
-      const routine = { id: `routine-${randomUUID().slice(0, 8)}`, title, memberId: member.id, category: args.category ? text(args.category, 'Category', 40) : 'Family', time, repeat: args.repeat, note: args.note ? text(args.note, 'Note', 240) : '', status: 'upcoming', createdAt: new Date(now).toISOString(), lastCompletedAt: null };
+      if (args.priority !== undefined && !['low', 'normal', 'high'].includes(args.priority)) throw new Error('Choose low, normal, or high priority.');
+      const routine = { id: `routine-${randomUUID().slice(0, 8)}`, title, memberId: member.id, category: args.category ? text(args.category, 'Category', 40) : 'Family', time, repeat: args.repeat, note: args.note ? text(args.note, 'Note', 240) : '', priority: args.priority || 'normal', status: 'upcoming', archived: false, createdAt: new Date(now).toISOString(), lastCompletedAt: null };
       state.routines.unshift(routine);
       activity(state, 'routine_created', member.id, `New routine added: ${routine.title} for ${member.name}`, now);
       return result({ ok: true, routine: { ...routine, memberName: member.name }, notice: 'Added to local demo only. No reminder was sent.' });
@@ -147,12 +154,47 @@ export function callTool(state, name, args = {}, now = Date.now(), pending = new
       return result({ items: state.activity.slice(0, limit).map((item) => ({ ...item, memberName: item.memberId ? memberById(state, item.memberId).name : 'HomeCircle' })), count: Math.min(limit, state.activity.length), source: 'Local activity timeline' });
     }
     if (name === 'update_family_preference') {
-      const start = text(args.quietStart, 'Quiet hours start', 5), end = text(args.quietEnd, 'Quiet hours end', 5);
+      const start = args.quietStart ?? state.preferences.quietHours.start, end = args.quietEnd ?? state.preferences.quietHours.end;
       if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(start) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(end)) throw new Error('Quiet hours must use 24-hour HH:MM format.');
+      if (args.followUpMinutes !== undefined && (!Number.isInteger(args.followUpMinutes) || args.followUpMinutes < 5 || args.followUpMinutes > 240)) throw new Error('Follow-up timing must be between 5 and 240 minutes.');
+      if (args.weekStartsOn !== undefined && !['Monday', 'Sunday'].includes(args.weekStartsOn)) throw new Error('Week start must be Monday or Sunday.');
+      if (args.timezone !== undefined) { const timezone = text(args.timezone, 'Timezone', 64); try { new Intl.DateTimeFormat('en', { timeZone: timezone }); } catch { throw new Error('Choose a valid IANA timezone.'); } state.home.timezone = timezone; }
       state.preferences.quietHours = { start, end };
-      activity(state, 'preference_updated', null, `Quiet hours changed to ${start}–${end}`, now);
-      return result({ ok: true, quietHours: state.preferences.quietHours, notice: 'Saved in local demo state.' });
+      if (args.followUpMinutes !== undefined) state.preferences.followUpMinutes = args.followUpMinutes;
+      if (args.weekStartsOn !== undefined) state.preferences.weekStartsOn = args.weekStartsOn;
+      if (args.sharingEnabled !== undefined) { if (typeof args.sharingEnabled !== 'boolean') throw new Error('Alert previews must be enabled or disabled.'); state.preferences.sharingEnabled = args.sharingEnabled; }
+      activity(state, 'preference_updated', null, 'Household planning preferences updated', now);
+      return result({ ok: true, preferences: state.preferences, notice: 'Saved in local demo state.' });
     }
+    if (name === 'update_routine') {
+      const routine = routineById(state, args.routineId);
+      if (args.title !== undefined) routine.title = text(args.title, 'Routine title', 80);
+      if (args.memberId !== undefined) routine.memberId = memberById(state, args.memberId).id;
+      if (args.category !== undefined) routine.category = text(args.category, 'Category', 40);
+      if (args.time !== undefined) { if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(args.time)) throw new Error('Time must use 24-hour HH:MM format.'); routine.time = args.time; }
+      if (args.repeat !== undefined) { if (!['Daily', 'Weekdays', 'Weekly', 'Today'].includes(args.repeat)) throw new Error('Choose Daily, Weekdays, Weekly, or Today.'); routine.repeat = args.repeat; }
+      if (args.note !== undefined) routine.note = args.note ? text(args.note, 'Note', 240) : '';
+      if (args.priority !== undefined) { if (!['low', 'normal', 'high'].includes(args.priority)) throw new Error('Choose low, normal, or high priority.'); routine.priority = args.priority; }
+      if (args.status !== undefined) { if (!['due', 'upcoming', 'paused'].includes(args.status)) throw new Error('Choose due, upcoming, or paused.'); routine.status = args.status; }
+      activity(state, 'routine_updated', routine.memberId, `Routine updated: ${routine.title}`, now);
+      return result({ ok: true, routine, notice: 'Updated in local demo only. No reminder was sent.' });
+    }
+    if (name === 'archive_routine') {
+      const routine = routineById(state, args.routineId); routine.archived = true;
+      activity(state, 'routine_archived', routine.memberId, `Routine archived: ${routine.title}`, now);
+      return result({ ok: true, routineId: routine.id, notice: 'Archived in local demo; history retained.' });
+    }
+    if (name === 'add_family_member') {
+      const name = text(args.name, 'Member name', 48), role = text(args.role, 'Relationship', 40);
+      const member = { id: `member-${randomUUID().slice(0, 8)}`, name, role, initials: name.split(/\s+/).slice(0, 2).map((part) => part[0].toUpperCase()).join(''), color: '#d7f1e7' };
+      state.members.push(member); activity(state, 'member_added', member.id, `${name} was added to the family circle`, now);
+      return result({ ok: true, member, notice: 'Added to fictional local household data.' });
+    }
+    if (name === 'get_insights') {
+      const active = state.routines.filter((x) => !x.archived && x.status !== 'paused'), completed = active.filter((x) => x.status === 'completed').length;
+      return result({ activeRoutines: active.length, completed, due: active.filter((x) => x.status === 'due').length, paused: state.routines.filter((x) => x.status === 'paused' && !x.archived).length, archived: state.routines.filter((x) => x.archived).length, completionRate: active.length ? Math.round(completed / active.length * 100) : 0, activityEvents: state.activity.length, highPriority: active.filter((x) => x.priority === 'high').length, byMember: state.members.map((m) => ({ member: m.name, routines: active.filter((x) => x.memberId === m.id).length, completed: active.filter((x) => x.memberId === m.id && x.status === 'completed').length })), source: 'Local HomeCircle demo data' });
+    }
+    if (name === 'export_household_data') return result({ exportedAt: new Date(now).toISOString(), format: 'homecircle-household-v1', data: clone(state), notice: 'Fictional demo data; download only when requested by the user.' });
     throw new Error(`Unknown tool: ${name}`);
   } catch (error) { return toolError(error.message); }
 }

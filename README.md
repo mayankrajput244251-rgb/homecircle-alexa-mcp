@@ -30,24 +30,38 @@ Health check: http://127.0.0.1:4319/health
 Protocol version: 2025-11-25  
 Transport: Streamable HTTP with JSON-RPC 2.0
 
-The web UI discovers the server tools at startup. The self-hosted server advertises eight tools:
+The web UI discovers the server tools at startup. The self-hosted server advertises thirteen tools:
 
 | Tool | Purpose |
 | --- | --- |
 | get_family_brief | Summarize members, routines, check-ins, and privacy state |
-| list_routines | Filter routines by member or status |
+| list_routines | Filter routines by member, status, category, or archive state |
 | log_check_in | Record a completed, skipped, or follow-up check-in |
 | create_routine | Add a local household routine |
 | prepare_caregiver_alert | Create a review-only alert preview |
 | confirm_caregiver_alert | Confirm or discard a preview; confirmation is local-only |
 | get_activity_timeline | Read recent household activity |
-| update_family_preference | Change the demo quiet-hours preference |
+| update_family_preference | Change quiet hours, follow-up timing, week start, timezone, and alert-preview preference |
+| update_routine | Edit routine details, priority, or active/paused state |
+| archive_routine | Archive a routine while preserving its activity history |
+| add_family_member | Add a name and relationship to the fictional household |
+| get_insights | Summarize completion, workload, priority, and per-member activity |
+| export_household_data | Return a user-requested JSON export |
 
 An MCP client can connect to the URL above using Streamable HTTP. An example endpoint declaration is included in mcp-config.json. The demo client sends initialize with 2025-11-25, completes initialization, discovers tools, and calls them with structured arguments.
 
 ## Browser demo mode
 
-When the page cannot reach a local MCP server, it switches to an explicitly labeled browser-only simulation. The sample routines and changes stay in the current browser session. This mode is useful for a public presentation; it does not use a backend, contact people, or send alerts.
+When the page cannot reach a local MCP server, it switches to an explicitly labeled browser-only simulation. The fictional demo state is kept in that browser's local storage. This mode is useful for a public presentation; it does not use a backend, contact people, or send alerts. Use “Export data” to download the current demo state as JSON.
+
+## Advanced dashboard
+
+- Search across routine titles, notes, categories, and assigned members; filter by member and status; sort by time, priority, name, or status.
+- Create and edit routines with repeat schedules, categories, notes, and low/normal/high priorities. Mark check-ins, pause/resume items, or archive them while retaining history.
+- Add fictional household members with a relationship label and view routine completion by member.
+- Review completion rate, due and paused workload, high-priority routines, recent activity, and a refreshable progress summary.
+- Configure quiet hours, follow-up window, week start, timezone, and alert-preview preference.
+- Download a JSON snapshot on demand. No data is sent to an external export service.
 
 ## Safety and privacy boundaries
 

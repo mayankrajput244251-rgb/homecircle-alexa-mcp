@@ -8,7 +8,8 @@ HomeCircle is a hackathon demonstration for coordinating fictional family routin
 - The self-hosted server persists its local demo state to data/state.json, which is excluded from Git.
 - The server binds to 127.0.0.1 by default. This keeps the demo local unless the operator deliberately changes the host.
 - There is no analytics, telemetry, model API, contact sync, or external storage.
-- Browser-only demo changes are held in memory and disappear when the page is closed.
+- Browser-only demo changes stay in that browser's local storage until its site data is cleared.
+- JSON export is created only after the user chooses “Export data”; the download is generated in the browser and is not uploaded elsewhere.
 
 ## Human review
 

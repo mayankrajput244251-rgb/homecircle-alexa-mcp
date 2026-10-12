@@ -2,7 +2,7 @@
 
 ## Components
 
-1. Browser dashboard: one responsive HTML page. It tries the same-origin MCP endpoint and switches to a clearly labeled in-memory simulation when the endpoint is absent.
+1. Browser dashboard: one responsive HTML page with searchable/filterable routine planning, member management, household insights, preference controls, and an explicit JSON export. It tries the same-origin MCP endpoint and switches to a clearly labeled browser-local simulation when the endpoint is absent.
 2. MCP server: Node.js HTTP server on loopback. It handles initialize, notifications, tools/list, tools/call, session IDs, and Streamable HTTP JSON responses.
 3. Tool layer: validates arguments, updates household routines, and returns structured results with evidence and safety notices.
 4. Local state store: atomic JSON writes to data/state.json. The file is ignored by Git and can be relocated with HOMECIRCLE_STATE_FILE.
@@ -10,9 +10,9 @@
 
 ## Request flow
 
-The browser opens a Streamable HTTP session, sends initialize with protocol version 2025-11-25, sends notifications/initialized, and calls tools/list. The user can then ask for a family brief, list routines, record a check-in, create a routine, or prepare an alert preview. Each resulting update passes through the same tool validation layer used by external MCP clients.
+The browser opens a Streamable HTTP session, sends initialize with protocol version 2025-11-25, sends notifications/initialized, and calls tools/list. The 13 tools cover routine search/filter data, check-ins, routine lifecycle management, member onboarding, household insights, preferences, user-requested exports, and review-only alert previews. Each resulting update passes through the same tool validation layer used by external MCP clients.
 
-Read-only calls return structured household data. Writes validate IDs and fields before modifying state. An alert is a two-step operation: prepare creates a short-lived preview; confirm consumes that preview once and records an event with externalMessageSent=false.
+Read-only calls return structured household data. Writes validate IDs and fields before modifying state. Routines support active, paused, completed, and archived states. Archiving hides a routine from the active planner but keeps the routine and its timeline history available to an explicit archived filter. Insights are computed from the current local state, not a remote analytics service. An export returns a JSON snapshot after a direct user action. An alert is a two-step operation: prepare creates a short-lived preview; confirm consumes that preview once and records an event with externalMessageSent=false.
 
 ## State lifecycle
 
@@ -25,7 +25,7 @@ On first startup, the server writes fictional seed data. Mutations are serialize
 - Tool arguments are schema-described and also validated server-side.
 - The server is deliberately bound to 127.0.0.1 by default.
 - The confirmation preview is not a real notification queue.
-- Browser simulation is separate from server persistence and is labeled in the interface.
+- Browser simulation is separate from server persistence, saved in local storage, and labeled in the interface.
 
 ## Extensions
 

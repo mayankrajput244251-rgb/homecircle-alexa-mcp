@@ -1,4 +1,4 @@
-# Three-minute demo script
+# Five-minute advanced demo script
 
 ## 0:00–0:25 · The problem
 
@@ -6,7 +6,7 @@
 
 ## 0:25–0:55 · Start and discover
 
-Run npm start, open the local page, and point out the MCP connected indicator. Mention that the page initializes the 2025-11-25 Streamable HTTP session and discovers eight tools from the server.
+Run npm start, open the local page, and point out the MCP connected indicator. Mention that the page initializes the 2025-11-25 Streamable HTTP session and discovers thirteen tools from the server.
 
 ## 0:55–1:25 · Ask for context
 
@@ -20,6 +20,14 @@ Mark the morning check-in complete. Show that the routine changes state and the 
 
 Ask “Prepare a caregiver alert.” Read the recipient, routine, reason, and effect in the preview. Discard it once, then prepare it again and confirm. Show that confirmation only adds a local demo event and never contacts a caregiver.
 
-## 2:30–2:55 · Add a routine and close
+## 2:30–3:40 · Advanced planner
 
-Add a family routine, show it in the dashboard, and explain the privacy boundary: fictional data, loopback server, no real medical advice, no external messages, and no public exposure by default.
+Search for a routine, filter it by member or status, and sort by priority. Edit the repeat schedule, set a priority, then pause and resume the routine. Archive another item and use the Archived filter to show its retained history.
+
+## 3:40–4:20 · Family, progress, and preferences
+
+Add a fictional member with a relationship label. Review household completion rate and per-member progress. Change the week start or timezone and save the local settings.
+
+## 4:20–5:00 · Export and close
+
+Download the JSON household export and explain that it is generated only after the user clicks the export control. Close with the privacy boundary: fictional data, local server state or browser storage, no medical advice, and no external messages.
