@@ -1,0 +1,14 @@
+{
+  "name": "homecircle-alexa-mcp",
+  "version": "1.0.0",
+  "private": false,
+  "type": "module",
+  "description": "A privacy-first family care coordination demo with an Alexa+ compatible MCP server.",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test",
+    "check": "node --check server.mjs && node --test"
+  },
+  "engines": { "node": ">=20" },
+  "license": "MIT"
+}
