@@ -2,7 +2,7 @@
 
 **A family care coordination assistant for the Alexa+ track.** HomeCircle gives a household one calm place to plan simple routines, record check-ins, and prepare a caregiver alert for human review.
 
-This is a separate project from the shop-floor copilot. It uses a self-hosted MCP server that implements Streamable HTTP with protocol version 2025-11-25, plus a browser dashboard that can run in local MCP mode or as a no-server interactive demo.
+HomeCircle uses a self-hosted MCP server that implements Streamable HTTP with protocol version 2025-11-25, plus a browser dashboard that can run in local MCP mode or as a no-server interactive demo.
 
 **Public browser demo:** https://homecircle-family-coordination.mayankrajput244251.chatgpt.site
 The hosted page runs its labeled browser-only simulation. Run the project locally to connect the dashboard to the actual MCP server.
